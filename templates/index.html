@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+
+<meta charset="UTF-8">
+
+<title>Mapa Colaborativo Poncho Verde</title>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+<link
+rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+/>
+
+</head>
+
+<body>
+
+<img
+src="{{ url_for('static', filename='rosa_ventos.png') }}"
+class="rosa"
+>
+
+<div class="painel">
+
+<h2>Mapa Colaborativo</h2>
+
+<p>Escola Poncho Verde</p>
+
+<select id="tipo">
+    <option value="problema">Problema</option>
+    <option value="solucao">Solução</option>
+</select>
+
+<input
+id="rua"
+placeholder="Rua"
+/>
+
+<textarea
+id="descricao"
+placeholder="Descrição"
+></textarea>
+
+<button onclick="salvarMarcador()">
+Salvar
+</button>
+
+<br><br>
+
+<button onclick="voltarEscola()">
+Voltar para Escola
+</button>
+
+<p id="coords">
+Clique no mapa
+</p>
+
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+const ESCOLA = [-28.3051754,-53.5083942]
+
+const map = L.map('map').setView(ESCOLA,17)
+
+L.tileLayer(
+'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+{
+maxZoom:19
+}
+).addTo(map)
+
+const iconeEscola = L.icon({
+    iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-yellow.png",
+    shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize:[25,41],
+    iconAnchor:[12,21]
+});
+
+const iconeLocal = L.icon({
+    iconUrl:"https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-violet.png",
+    shadowUrl:"https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize:[25,41],
+    iconAnchor:[12,41]
+});
+
+L.marker(
+    ESCOLA,
+    {icon: iconeEscola}
+)
+.addTo(map)
+.bindPopup("EEEB Poncho Verde")
+
+let latSelecionada = null
+let lonSelecionada = null
+
+let marcadorTemp = null;
+
+map.on('click', function(e){
+
+    latSelecionada = e.latlng.lat;
+    lonSelecionada = e.latlng.lng;
+
+    if(marcadorTemp){
+        map.removeLayer(marcadorTemp);
+    }
+
+    const iconeSelecao = L.icon({
+    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
+    shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+    iconSize:[25,41],
+    iconAnchor:[12,41]
+});
+
+marcadorTemp = L.marker(
+    [latSelecionada, lonSelecionada],
+    {icon: iconeSelecao}
+).addTo(map);
+
+    document.getElementById("coords").innerHTML =
+        `Latitude: ${latSelecionada.toFixed(6)}
+        <br>
+        Longitude: ${lonSelecionada.toFixed(6)}`;
+});
+
+function voltarEscola(){
+
+    map.setView(ESCOLA,17)
+
+}
+
+const locaisImportantes = [
+
+{
+nome:"Atacado Cotripal",
+lat:-28.309906,
+lon:-53.507701,
+img:"/static/atacado.jpg"
+},
+
+{
+nome:"DTG Poncho Verde",
+lat:-28.3184235,
+lon:-53.5173644,
+img:"/static/dtg.jpg"
+},
+
+{
+nome:"SENAI",
+lat:-28.3108346,
+lon:-53.5079733,
+img:"/static/senai.jpg"
+},
+
+{
+nome:"Prefeitura Municipal",
+lat:-28.3065647,
+lon:-53.5083618,
+img:"/static/prefeitura.jpg"
+},
+
+{
+nome:"Praça Central",
+lat:-28.2898554,
+lon:-53.5018606,
+img:"/static/praca.jpg"
+},
+
+{
+nome:"Supermercado Cotripal",
+lat:-28.2888931,
+lon:-53.5000443,
+img:"/static/supermercado.jpg"
+}
+
+];
+
+function carregarDados(){
+
+locaisImportantes.forEach(local => {
+
+    L.marker(
+    [local.lat, local.lon],
+    {icon: iconeLocal}
+)
+    .addTo(map)
+    .bindPopup(`
+    <h3>${local.nome}</h3>
+
+    <img
+        src="${local.img}"
+        width="250"
+    >
+`);
+
+});
+
+    fetch("/dados")
+    .then(r => r.json())
+    .then(dados => {
+
+        dados.problemas.forEach(p => {
+
+            L.circleMarker(
+                [p.lat,p.lon],
+                {
+                    color:"red"
+                }
+            )
+            .addTo(map)
+            .bindPopup(`
+    <b>Problema</b>
+    <br>
+    Rua: ${p.rua}
+    <br>
+    ${p.descricao}
+
+    <br><br>
+
+    <button onclick="removerProblema(${p.id})">
+        Remover
+    </button>
+`)
+
+        })
+
+        dados.solucoes.forEach(s => {
+
+            L.circleMarker(
+                [s.lat,s.lon],
+                {
+                    color:"green"
+                }
+            )
+            .addTo(map)
+            .bindPopup(`
+    <b>Solução</b>
+    <br>
+    Rua: ${s.rua}
+    <br>
+    ${s.descricao}
+
+    <br><br>
+
+    <button onclick="removerSolucao(${s.id})">
+        Remover
+    </button>
+`)
+
+        })
+
+    })
+
+}
+
+function salvarMarcador(){
+
+    if(latSelecionada == null){
+
+        alert("Clique no mapa primeiro")
+
+        return
+
+    }
+
+    let tipo =
+        document.getElementById("tipo").value
+
+    let rua =
+        document.getElementById("rua").value
+
+    let descricao =
+        document.getElementById("descricao").value
+
+    fetch("/" + tipo,{
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+    id: Date.now(),
+    rua,
+    descricao,
+    lat:latSelecionada,
+    lon:lonSelecionada
+})
+    })
+    .then(() => location.reload())
+
+}
+
+const legenda = L.control({position: 'bottomright'});
+
+legenda.onAdd = function () {
+
+    const div = L.DomUtil.create('div');
+
+    div.innerHTML = `
+        <div style="
+            background:white;
+            padding:10px;
+            border-radius:8px;
+            box-shadow:0 0 10px rgba(0,0,0,.2);
+        ">
+            🟡 Escola<br>
+            🔵 Local Selecionado<br>
+            🟣 Local Importante<br>
+            🔴 Problema<br>
+            🟢 Solução
+        </div>
+    `;
+
+    return div;
+};
+
+legenda.addTo(map);
+
+function removerProblema(id){
+
+    if(!confirm("Remover problema?"))
+        return;
+
+    fetch(
+        "/remover_problema/" + id,
+        {
+            method:"DELETE"
+        }
+    )
+    .then(() => location.reload());
+
+}
+
+
+function removerSolucao(id){
+
+    if(!confirm("Remover solução?"))
+        return;
+
+    fetch(
+        "/remover_solucao/" + id,
+        {
+            method:"DELETE"
+        }
+    )
+    .then(() => location.reload());
+
+}
+
+carregarDados()
+
+</script>
+
+</body>
+</html>
