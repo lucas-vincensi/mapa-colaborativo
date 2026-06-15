@@ -27,10 +27,9 @@ class="rosa"
 
 <h2>Mapa Colaborativo</h2>
 
-
 <select id="tipo">
-    <option value="problema">Problema</option>
-    <option value="solucao">Solução</option>
+    <option value="problema">Problema Identificado</option>
+    <option value="solucao">Proposta de Solução</option>
 </select>
 
 <input
@@ -251,7 +250,7 @@ locaisImportantes.forEach(local => {
             )
             .addTo(map)
             .bindPopup(`
-    <b>Problema</b>
+    <b>Problema Identificado</b>
     <br>
     Rua: ${p.rua}
     <br>
@@ -276,7 +275,7 @@ locaisImportantes.forEach(local => {
             )
             .addTo(map)
             .bindPopup(`
-    <b>Solução</b>
+    <b>Proposta de Solução</b>
     <br>
     Rua: ${s.rua}
     <br>
