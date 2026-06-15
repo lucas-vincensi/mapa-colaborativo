@@ -54,6 +54,12 @@ Salvar
 Voltar para Escola
 </button>
 
+<br><br>
+
+<button onclick="abrirIntegrantes()">
+Integrantes
+</button>
+
 <p id="coords">
 Clique no mapa
 </p>
@@ -61,6 +67,24 @@ Clique no mapa
 </div>
 
 <div id="map"></div>
+
+<div id="modalIntegrantes" class="modal">
+
+    <div class="modal-content">
+
+        <span class="fechar" onclick="fecharIntegrantes()">
+            ×
+        </span>
+
+        <h2>Integrantes</h2>
+
+        <p>Rafael Vincensi</p>
+
+        <p>Lucas ...</p>
+
+    </div>
+
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -352,6 +376,22 @@ function removerSolucao(id){
         }
     )
     .then(() => location.reload());
+
+}
+
+function abrirIntegrantes(){
+
+    document
+    .getElementById("modalIntegrantes")
+    .style.display = "block";
+
+}
+
+function fecharIntegrantes(){
+
+    document
+    .getElementById("modalIntegrantes")
+    .style.display = "none";
 
 }
 
