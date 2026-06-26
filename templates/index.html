@@ -26,7 +26,11 @@ class="rosa"
 <div class="painel">
 
 <h2>Mapa Colaborativo</h2>
+<p id="statusUsuario">
+    Visitante
+</p>
 
+<div id="painelCadastro">
 <select id="tipo">
     <option value="problema">Problema Identificado</option>
     <option value="solucao">Proposta de Solução</option>
@@ -56,7 +60,7 @@ Voltar para Escola
 <p id="coords">
 Clique no mapa
 </p>
-
+</div>
 </div>
 
 <div id="map"></div>
@@ -76,7 +80,34 @@ Clique no mapa
         <p>Lucas</p>
         <p>Pedro</p>
 
-    
+    </div>
+
+</div>
+
+<div id="modalLogin" class="modal">
+
+    <div class="modal-content">
+
+        <span class="fechar" onclick="fecharLogin()">
+            ×
+        </span>
+
+        <h2>Login</h2>
+
+        <input
+            id="usuario"
+            placeholder="Usuário"
+        >
+
+        <input
+            id="senha"
+            type="password"
+            placeholder="Senha"
+        >
+
+        <button onclick="login()">
+            Entrar
+        </button>
 
     </div>
 
@@ -89,6 +120,7 @@ Clique no mapa
 const ESCOLA = [-28.3051754,-53.5083942]
 
 const map = L.map('map').setView(ESCOLA,17)
+let usuarioLogado = false;
 
 L.tileLayer(
 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -221,23 +253,23 @@ img:"/static/supermercado.jpg"
 
 function carregarDados(){
 
-locaisImportantes.forEach(local => {
+    locaisImportantes.forEach(local => {
 
-    L.marker(
-    [local.lat, local.lon],
-    {icon: iconeLocal}
-)
-    .addTo(map)
-    .bindPopup(`
-    <h3>${local.nome}</h3>
+        L.marker(
+            [local.lat, local.lon],
+            {icon: iconeLocal}
+        )
+        .addTo(map)
+        .bindPopup(`
+            <h3>${local.nome}</h3>
 
-    <img
-        src="${local.img}"
-        width="250"
-    >
-`);
+            <img
+                src="${local.img}"
+                width="250"
+            >
+        `);
 
-});
+    });
 
     fetch("/dados")
     .then(r => r.json())
@@ -245,63 +277,72 @@ locaisImportantes.forEach(local => {
 
         dados.problemas.forEach(p => {
 
+            const botaoRemover = usuarioLogado
+                ? `
+                    <br><br>
+                    <button onclick="removerProblema(${p.id})">
+                        Remover
+                    </button>
+                  `
+                : "";
+
             L.circleMarker(
-                [p.lat,p.lon],
+                [p.lat, p.lon],
                 {
-                    color:"red"
+                    color: "red"
                 }
             )
             .addTo(map)
             .bindPopup(`
-    <b>Problema Identificado</b>
-    <br>
-    Rua: ${p.rua}
-    <br>
-    ${p.descricao}
+                <b>Problema Identificado</b>
+                <br>
+                Rua: ${p.rua}
+                <br>
+                ${p.descricao}
+                ${botaoRemover}
+            `);
 
-    <br><br>
-
-    <button onclick="removerProblema(${p.id})">
-        Remover
-    </button>
-`)
-
-        })
+        });
 
         dados.solucoes.forEach(s => {
 
+            const botaoRemover = usuarioLogado
+                ? `
+                    <br><br>
+                    <button onclick="removerSolucao(${s.id})">
+                        Remover
+                    </button>
+                  `
+                : "";
+
             L.circleMarker(
-                [s.lat,s.lon],
+                [s.lat, s.lon],
                 {
-                    color:"green"
+                    color: "green"
                 }
             )
             .addTo(map)
             .bindPopup(`
-    <b>Proposta de Solução</b>
-    <br>
-    Rua: ${s.rua}
-    <br>
-    ${s.descricao}
+                <b>Proposta de Solução</b>
+                <br>
+                Rua: ${s.rua}
+                <br>
+                ${s.descricao}
+                ${botaoRemover}
+            `);
 
-    <br><br>
+        });
 
-    <button onclick="removerSolucao(${s.id})">
-        Remover
-    </button>
-`)
-
-        })
-
-    })
+    });
 
 }
+
 
 function salvarMarcador(){
 
     if(latSelecionada == null){
 
-        alert("Clique no mapa primeiro")
+        mostrarMensagem("Clique no mapa primeiro");
 
         return
 
@@ -316,6 +357,21 @@ function salvarMarcador(){
     let descricao =
         document.getElementById("descricao").value
 
+    if(rua.trim() == ""){
+
+    mostrarMensagem("Informe a rua.");
+
+    return;
+
+}
+
+if(descricao.trim() == ""){
+
+    mostrarMensagem("Informe a descrição.");
+
+    return;
+
+}
     fetch("/" + tipo,{
         method:"POST",
 
@@ -323,12 +379,16 @@ function salvarMarcador(){
             "Content-Type":"application/json"
         },
 
-        body:JSON.stringify({
-    id: Date.now(),
+     body:JSON.stringify({
+
     rua,
+
     descricao,
+
     lat:latSelecionada,
+
     lon:lonSelecionada
+
 })
     })
     .then(() => location.reload())
@@ -363,32 +423,50 @@ legenda.addTo(map);
 
 function removerProblema(id){
 
-    if(!confirm("Remover problema?"))
-        return;
+    abrirConfirmacao(
 
-    fetch(
-        "/remover_problema/" + id,
-        {
-            method:"DELETE"
+        "Remover problema",
+
+        "Deseja realmente remover este problema?",
+
+        function(){
+
+            fetch(
+                "/remover_problema/" + id,
+                {
+                    method:"DELETE"
+                }
+            )
+            .then(() => location.reload());
+
         }
-    )
-    .then(() => location.reload());
+
+    );
 
 }
 
 
 function removerSolucao(id){
 
-    if(!confirm("Remover solução?"))
-        return;
+    abrirConfirmacao(
 
-    fetch(
-        "/remover_solucao/" + id,
-        {
-            method:"DELETE"
+        "Remover solução",
+
+        "Deseja realmente remover esta solução?",
+
+        function(){
+
+            fetch(
+                "/remover_solucao/" + id,
+                {
+                    method:"DELETE"
+                }
+            )
+            .then(() => location.reload());
+
         }
-    )
-    .then(() => location.reload());
+
+    );
 
 }
 
@@ -408,7 +486,155 @@ function fecharIntegrantes(){
 
 }
 
-carregarDados()
+function abrirLogin(){
+
+    document
+    .getElementById("modalLogin")
+    .style.display = "block";
+
+}
+
+function fecharLogin(){
+
+    document
+    .getElementById("modalLogin")
+    .style.display = "none";
+
+}
+
+function login(){
+
+    fetch("/login",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/json"
+        },
+
+        body:JSON.stringify({
+
+            usuario:
+                document.getElementById("usuario").value,
+
+            senha:
+                document.getElementById("senha").value
+
+        })
+
+    })
+
+    .then(res => {
+
+        if(res.ok){
+
+            mostrarMensagem("Login realizado com sucesso!");
+
+            fecharLogin();
+            document.getElementById("usuario").value = "";
+            document.getElementById("senha").value = "";
+            location.reload();
+
+        }
+
+        else{
+
+            mostrarMensagem("Usuário ou senha incorretos.");
+
+        }
+
+    });
+
+}
+
+fetch("/status")
+.then(r => r.json())
+.then(dados => {
+
+    if(dados.logado){
+        usuarioLogado = true;
+
+        document.getElementById("statusUsuario").innerHTML =
+            dados.usuario;
+
+        document.getElementById("painelCadastro").style.display =
+            "block";
+
+        document.getElementById("btnLogin").innerHTML =
+            "Sair";
+
+        document.getElementById("btnLogin").onclick = logout;
+
+    }
+    else{
+        usuarioLogado = false;
+        document.getElementById("statusUsuario").innerHTML =
+            "Visitante";
+
+        document.getElementById("painelCadastro").style.display =
+            "none";
+
+    }
+carregarDados();
+});
+
+
+function logout(){
+
+    fetch("/logout")
+    .then(() => location.reload());
+
+}
+
+function mostrarMensagem(texto){
+
+    const toast =
+        document.getElementById("toast");
+
+    toast.innerHTML = texto;
+
+    toast.classList.add("show");
+
+    setTimeout(() => {
+
+        toast.classList.remove("show");
+
+    },2500);
+
+}
+
+
+let acaoConfirmacao = null;
+
+function abrirConfirmacao(titulo, texto, acao){
+
+    document.getElementById("tituloConfirmacao").innerHTML = titulo;
+
+    document.getElementById("textoConfirmacao").innerHTML = texto;
+
+    document.getElementById("modalConfirmacao").style.display = "block";
+
+    acaoConfirmacao = acao;
+
+}
+
+function fecharConfirmacao(){
+
+    document.getElementById("modalConfirmacao").style.display = "none";
+
+}
+
+function confirmarAcao(){
+
+    fecharConfirmacao();
+
+    if(acaoConfirmacao){
+
+        acaoConfirmacao();
+
+    }
+
+}
 
 </script>
 <button
@@ -417,5 +643,44 @@ carregarDados()
 >
       Integrantes
 </button>
+
+<button
+    id="btnLogin"
+    class="btn-login"
+    onclick="abrirLogin()"
+>
+    Login
+</button>
+<div id="modalConfirmacao" class="modal">
+
+    <div class="modal-content">
+
+        <h2 id="tituloConfirmacao">
+            Confirmação
+        </h2>
+
+        <p id="textoConfirmacao">
+            Deseja continuar?
+        </p>
+
+        <button
+    id="btnConfirmar"
+    onclick="confirmarAcao()"
+    style="background:#d32f2f;color:white;margin-bottom:10px;"
+>
+            Remover
+        </button>
+
+        <button
+            onclick="fecharConfirmacao()"
+        >
+            Cancelar
+        </button>
+
+    </div>
+
+</div>
+
+<div id="toast" class="toast"></div>
 </body>
 </html>

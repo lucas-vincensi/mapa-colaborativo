@@ -132,3 +132,70 @@ button{
     background:#f0f0f0;
 
 }
+
+.btn-login{
+
+    position:fixed;
+
+    left:15px;
+    bottom:60px;
+
+    width:auto;
+
+    padding:8px 12px;
+
+    background:#2b7cff;
+
+    color:white;
+
+    border:none;
+
+    border-radius:8px;
+
+    box-shadow:0 0 10px rgba(0,0,0,.2);
+
+    cursor:pointer;
+
+    z-index:9999;
+
+}
+
+.btn-login:hover{
+
+    background:#1f63d6;
+
+}
+
+.toast{
+
+    position:fixed;
+
+    top:20px;
+
+    right:20px;
+
+    background:#2e7d32;
+
+    color:white;
+
+    padding:15px 20px;
+
+    border-radius:10px;
+
+    box-shadow:0 5px 15px rgba(0,0,0,.3);
+
+    opacity:0;
+
+    transition:.3s;
+
+    z-index:99999;
+
+    font-weight:bold;
+
+}
+
+.toast.show{
+
+    opacity:1;
+
+}

@@ -1,11 +1,25 @@
-from flask import Flask, render_template, request, jsonify
-import json
 import os
+from dotenv import load_dotenv
+
+from flask import (
+    Flask,
+    render_template,
+    request,
+    jsonify,
+    session
+)
+
+from database import (
+    listar_marcacoes,
+    adicionar_marcacao,
+    remover_marcacao,
+    autenticar
+)
+
+load_dotenv()
 
 app = Flask(__name__)
-
-PROBLEMAS = "problemas.json"
-SOLUCOES = "solucoes.json"
+app.secret_key = os.getenv("SECRET_KEY")
 
 PONCHO_VERDE = {
     "lat": -28.3051754,
@@ -13,24 +27,9 @@ PONCHO_VERDE = {
 }
 
 
-def carregar(nome):
-    if not os.path.exists(nome):
-        return []
-
-    with open(nome, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except:
-            return []
-
-
-def salvar(nome, dados):
-    with open(nome, "w", encoding="utf-8") as f:
-        json.dump(dados, f, indent=4, ensure_ascii=False)
-
-
 @app.route("/")
 def home():
+
     return render_template("index.html")
 
 
@@ -38,20 +37,40 @@ def home():
 def dados():
 
     return jsonify({
-        "problemas": carregar(PROBLEMAS),
-        "solucoes": carregar(SOLUCOES),
+
+        "problemas": listar_marcacoes("problema"),
+
+        "solucoes": listar_marcacoes("solucao"),
+
         "escola": PONCHO_VERDE
+
     })
 
 
 @app.route("/problema", methods=["POST"])
 def problema():
 
-    dados = carregar(PROBLEMAS)
+    if "usuario" not in session:
 
-    dados.append(request.json)
+        return {
+        "erro": "Não autorizado"
+         }, 401
 
-    salvar(PROBLEMAS, dados)
+    dados = request.json
+
+    adicionar_marcacao(
+
+        "problema",
+
+        dados["rua"],
+
+        dados["descricao"],
+
+        dados["lat"],
+
+        dados["lon"]
+
+    )
 
     return {"ok": True}
 
@@ -59,25 +78,39 @@ def problema():
 @app.route("/solucao", methods=["POST"])
 def solucao():
 
-    dados = carregar(SOLUCOES)
+    if "usuario" not in session:
 
-    dados.append(request.json)
+        return {
+        "erro": "Não autorizado"
+        }, 401
 
-    salvar(SOLUCOES, dados)
+    dados = request.json
+
+    adicionar_marcacao(
+
+        "solucao",
+
+        dados["rua"],
+
+        dados["descricao"],
+
+        dados["lat"],
+
+        dados["lon"]
+
+    )
 
     return {"ok": True}
 
+
 @app.route("/remover_problema/<int:id>", methods=["DELETE"])
 def remover_problema(id):
+    if "usuario" not in session:
 
-    dados = carregar(PROBLEMAS)
-
-    dados = [
-        p for p in dados
-        if p["id"] != id
-    ]
-
-    salvar(PROBLEMAS, dados)
+        return {
+        "erro": "Não autorizado"
+        }, 401
+    remover_marcacao(id)
 
     return {"ok": True}
 
@@ -85,19 +118,61 @@ def remover_problema(id):
 @app.route("/remover_solucao/<int:id>", methods=["DELETE"])
 def remover_solucao(id):
 
-    dados = carregar(SOLUCOES)
+    if "usuario" not in session:
 
-    dados = [
-        s for s in dados
-        if s["id"] != id
-    ]
-
-    salvar(SOLUCOES, dados)
+        return {
+        "erro": "Não autorizado"
+        }, 401
+    remover_marcacao(id)
 
     return {"ok": True}
 
+@app.route("/login", methods=["POST"])
+def login():
+
+    dados = request.json
+
+    usuario = autenticar(
+        dados["usuario"],
+        dados["senha"]
+    )
+
+    if usuario:
+
+        session["usuario"] = dados["usuario"]
+
+        return {
+            "ok": True
+        }
+
+    return {
+        "ok": False
+    }, 401
+
+@app.route("/logout")
+def logout():
+
+    session.clear()
+
+    return {
+        "ok": True
+    }
+
+@app.route("/status")
+def status():
+
+    return jsonify({
+
+        "logado": "usuario" in session,
+
+        "usuario": session.get("usuario")
+
+    })
+
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        debug=True
     )
