@@ -30,6 +30,10 @@ body{
     z-index:9999;
 }
 
+#painelCadastro{
+    display: none;
+}
+
 input,
 textarea,
 select{
